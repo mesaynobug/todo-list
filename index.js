@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const http_1 = require("http");
+let tasks = [];
 (0, http_1.createServer)(function (req, res) {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(`<form action="" method="post">
@@ -14,8 +15,11 @@ const http_1 = require("http");
         });
         req.on("end", () => {
             let usp = new URLSearchParams(data);
-            console.log(usp.get("textBox"));
+            tasks.push(usp.get("textBox"));
         });
+    }
+    for (let element in tasks) {
+        console.log(tasks[element]);
     }
     res.end();
 }).listen(3000);
