@@ -29,7 +29,7 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
 
     function addTask(task: string){tasks.push(new Task(task,id++))}
 
-    function removeTask(argument: number){tasks.filter(task => task.id !== argument);}
+    function removeTask(argument: number){tasks = tasks.filter(task => task.id !== argument);}
 
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);

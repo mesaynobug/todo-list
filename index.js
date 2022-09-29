@@ -23,7 +23,7 @@ let myForm = `<form action="" method="post">
         res.end();
     }
     function addTask(task) { tasks.push(new Task(task, id++)); }
-    function removeTask(argument) { tasks.filter(task => task.id !== argument); }
+    function removeTask(argument) { tasks = tasks.filter(task => task.id !== argument); }
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);
     tasksStr = "";
@@ -39,7 +39,7 @@ let myForm = `<form action="" method="post">
             if (command == "delete" && tasks.some(e => e.id == parseInt(argument))) {
                 removeTask(parseInt(argument));
             }
-            else if (command == "add" && argument != "") {
+            else if (command == "todo" && argument != "") {
                 addTask(argument);
             }
             writeTasks();
