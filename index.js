@@ -22,6 +22,8 @@ let myForm = `<form action="" method="post">
         res.write(tasksStr);
         res.end();
     }
+    function addTask(task) { tasks.push(new Task(task, id++)); }
+    function removeTask(argument) { tasks.filter(task => task.id !== argument); }
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);
     tasksStr = "";
@@ -32,8 +34,13 @@ let myForm = `<form action="" method="post">
         });
         req.on("end", () => {
             let usp = new URLSearchParams(data);
-            if (usp.get("textBox") != "") {
-                tasks.push(new Task(usp.get("textBox"), id++));
+            let command = usp.get("textBox").substring(0, usp.get("textBox").indexOf(' '));
+            let argument = usp.get("textBox").substring(usp.get("textBox").indexOf(' ') + 1);
+            if (command == "delete" && tasks.some(e => e.id == parseInt(argument))) {
+                removeTask(parseInt(argument));
+            }
+            else if (command == "add" && argument != "") {
+                addTask(argument);
             }
             writeTasks();
         });

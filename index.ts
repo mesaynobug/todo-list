@@ -26,6 +26,11 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
         }
         res.write(tasksStr);
         res.end();}
+
+    function addTask(task: string){tasks.push(new Task(task,id++))}
+
+    function removeTask(argument: number){tasks.filter(task => task.id !== argument);}
+
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);
     tasksStr = "";
@@ -36,9 +41,14 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
         });
         req.on("end", () => {
             let usp: URLSearchParams = new URLSearchParams(data);
-            if (usp.get("textBox") != "") {
-                tasks.push(new Task(usp.get("textBox")!,id++));
-            }
+            let command: string = usp.get("textBox")!.substring(0,usp.get("textBox")!.indexOf(' '));
+            let argument: string = usp.get("textBox")!.substring(usp.get("textBox")!.indexOf(' ')+1);
+
+            if (command == "delete" && tasks.some(e => e.id == parseInt(argument))){
+                removeTask(parseInt(argument));}
+            
+            else if(command == "todo" && argument != ""){addTask(argument);}
+
             writeTasks();
         });
     }
