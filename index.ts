@@ -22,8 +22,7 @@ let myForm: string = `<form action="" method="post">
 createServer(function (req: IncomingMessage, res: ServerResponse) {
     function writeTasks(){
         for (let element in tasks) {
-            tasksStr += tasks[element].desc + "<br>";
-            console.log(tasks[element].id);
+            tasksStr += tasks[element].id + ": " + tasks[element].desc + "<br>";
         }
         res.write(tasksStr);
         res.end();}
