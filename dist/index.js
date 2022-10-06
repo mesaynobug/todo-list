@@ -5,6 +5,34 @@ class Task {
     constructor(desc, id) {
         this.desc = desc;
         this.id = id;
+        this.complete = false;
+    }
+}
+class AddCommand {
+    run(input, res) {
+        tasks.push(new Task(input, id++));
+        res.write("Added a new task.");
+    }
+}
+AddCommand.COMMAND_WORD = "todo";
+class RemoveCommand {
+    run(input, res) {
+        tasks = tasks.filter(task => task.id.toString() !== input);
+        res.write("Task deleted.");
+    }
+}
+RemoveCommand.COMMAND_WORD = "remove";
+class ListCommand {
+    run(input, res) {
+        tasks.forEach(task => tasksStr += task.id + ": " + task.desc + "<br>");
+        res.write(tasksStr);
+        res.end();
+    }
+}
+ListCommand.COMMAND_WORD = "list";
+class InvalidCommand {
+    run(input, res) {
+        res.write("Invalid Command!");
     }
 }
 let tasks = [];
@@ -15,14 +43,6 @@ let myForm = `<form action="" method="post">
                       <button type="submit">Hello!</button>
                       </form>`;
 (0, http_1.createServer)(function (req, res) {
-    function addTask(task) {
-        tasks.push(new Task(task, id++));
-        res.write("Added a new task.");
-    }
-    function removeTask(argument) {
-        tasks = tasks.filter(task => task.id !== argument);
-        res.write("Task deleted.");
-    }
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);
     tasksStr = "";
@@ -33,22 +53,27 @@ let myForm = `<form action="" method="post">
         });
         req.on("end", () => {
             let usp = new URLSearchParams(data);
-            let command = usp.get("textBox").substring(0, usp.get("textBox").indexOf(' '));
-            if (usp.get("textBox").indexOf(' ') === -1) {
-                command = usp.get("textBox");
+            let varCommand = usp.get("textBox").substring(0, usp.get("textBox").indexOf(' '));
+            if (usp.get("textBox").indexOf(' ') == -1) {
+                varCommand = usp.get("textBox");
             }
             let argument = usp.get("textBox").substring(usp.get("textBox").indexOf(' ') + 1);
-            if (command === "delete" && tasks.some(e => e.id === parseInt(argument))) {
-                removeTask(parseInt(argument));
+            let command;
+            switch (varCommand.toLowerCase().trim()) {
+                case AddCommand.COMMAND_WORD:
+                    command = new AddCommand();
+                    break;
+                case RemoveCommand.COMMAND_WORD:
+                    command = new RemoveCommand();
+                    break;
+                case ListCommand.COMMAND_WORD:
+                    command = new ListCommand();
+                    break;
+                default:
+                    command = new InvalidCommand();
+                    break;
             }
-            else if (command === "todo" && argument != "") {
-                addTask(argument);
-            }
-            else if (command === "list") {
-                tasks.forEach(task => tasksStr += task.id + ": " + task.desc + "<br>");
-                res.write(tasksStr);
-                res.end();
-            }
+            command.run(argument, res);
         });
     }
     else if (req.url !== '/favicon.ico') {
