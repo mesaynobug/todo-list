@@ -13,7 +13,7 @@ class Task{
 }
 
 interface Command{
-    run(input:String, res:ServerResponse):void;
+    run(input:string, res:ServerResponse):void;
 }
 
 class AddCommand implements Command{
@@ -26,7 +26,7 @@ class AddCommand implements Command{
 
 class RemoveCommand implements Command{
     static readonly COMMAND_WORD:string = "remove"
-    run(input:String, res:ServerResponse):void{
+    run(input:string, res:ServerResponse):void{
         tasks = tasks.filter(task => task.id.toString() !== input);
         res.write("Task deleted.");
     }
@@ -34,15 +34,31 @@ class RemoveCommand implements Command{
 
 class ListCommand implements Command{
     static readonly COMMAND_WORD:string = "list";
-    run(input:String, res:ServerResponse):void{
-        tasks.forEach(task => tasksStr += task.id + ": " + task.desc + "<br>");
+    run(input:string, res:ServerResponse):void{
+        tasks.forEach(task => tasksStr += task.id + ": " + task.desc + " | Complete: " + task.complete + "<br>");
         res.write(tasksStr);
         res.end();
     }
 }
 
+class CompleteCommand implements Command{
+    static readonly COMMAND_WORD:string = "complete";
+    run(input:string, res:ServerResponse):void{
+        tasks.find(task => task.id == parseInt(input))!.complete = true;
+        res.write("Task "+input+" marked complete.")
+    }    
+}
+
+class IncompleteCommand implements Command{
+    static readonly COMMAND_WORD:string = "incomplete";
+    run(input:string, res:ServerResponse):void{
+        tasks.find(task => task.id == parseInt(input))!.complete = false;
+        res.write("Task "+input+" marked incomplete.")
+    }    
+}
+
 class InvalidCommand implements Command{
-    run(input:String, res:ServerResponse):void{
+    run(input:string, res:ServerResponse):void{
         res.write("Invalid Command!");
     }
 }
@@ -82,6 +98,12 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     break;
                 case ListCommand.COMMAND_WORD:
                     command = new ListCommand();
+                    break;
+                case CompleteCommand.COMMAND_WORD:
+                    command = new CompleteCommand();
+                    break;
+                case IncompleteCommand.COMMAND_WORD:
+                    command = new IncompleteCommand();
                     break;
                 default:
                     command = new InvalidCommand();

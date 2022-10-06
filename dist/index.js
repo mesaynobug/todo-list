@@ -24,12 +24,26 @@ class RemoveCommand {
 RemoveCommand.COMMAND_WORD = "remove";
 class ListCommand {
     run(input, res) {
-        tasks.forEach(task => tasksStr += task.id + ": " + task.desc + "<br>");
+        tasks.forEach(task => tasksStr += task.id + ": " + task.desc + " | Complete: " + task.complete + "<br>");
         res.write(tasksStr);
         res.end();
     }
 }
 ListCommand.COMMAND_WORD = "list";
+class CompleteCommand {
+    run(input, res) {
+        tasks.find(task => task.id == parseInt(input)).complete = true;
+        res.write("Task " + input + " marked complete.");
+    }
+}
+CompleteCommand.COMMAND_WORD = "complete";
+class IncompleteCommand {
+    run(input, res) {
+        tasks.find(task => task.id == parseInt(input)).complete = false;
+        res.write("Task " + input + " marked incomplete.");
+    }
+}
+IncompleteCommand.COMMAND_WORD = "incomplete";
 class InvalidCommand {
     run(input, res) {
         res.write("Invalid Command!");
@@ -68,6 +82,12 @@ let myForm = `<form action="" method="post">
                     break;
                 case ListCommand.COMMAND_WORD:
                     command = new ListCommand();
+                    break;
+                case CompleteCommand.COMMAND_WORD:
+                    command = new CompleteCommand();
+                    break;
+                case IncompleteCommand.COMMAND_WORD:
+                    command = new IncompleteCommand();
                     break;
                 default:
                     command = new InvalidCommand();
