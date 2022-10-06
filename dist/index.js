@@ -45,10 +45,7 @@ let myForm = `<form action="" method="post">
                 addTask(argument);
             }
             else if (command === "list") {
-                console.log(usp.get("textBox").indexOf(' '));
-                for (let element in tasks) {
-                    tasksStr += tasks[element].id + ": " + tasks[element].desc + "<br>";
-                }
+                tasks.forEach(task => tasksStr += task.id + ": " + task.desc + "<br>");
                 res.write(tasksStr);
                 res.end();
             }
