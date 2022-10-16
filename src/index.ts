@@ -16,6 +16,14 @@ interface Command{
     run(input:string, res:ServerResponse):void;
 }
 
+interface Database{
+    create(task:Task):Promise<Number>
+    read(id: Number):Promise<Task>
+    update(id: Number, task:Task):Promise<Boolean>
+    delete(id: Number):Promise<Boolean>
+    list():Promise<Number[]>
+}
+
 class AddCommand implements Command{
     static readonly COMMAND_WORD:string = "todo"
     run(input:string, res:ServerResponse):void{

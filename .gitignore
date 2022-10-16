@@ -1,5 +1,5 @@
 # Ignore node_modules
 node_modules/
-
+dist/
 # Typescript caches
 *.tsbuildinfo
