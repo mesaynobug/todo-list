@@ -13,7 +13,7 @@ class Task{
 }
 
 interface Command{
-    run(input:string, res:ServerResponse):void;
+    run(input:string, res:ServerResponse, db:Database):Promise<void>;
 }
 
 interface Database{
@@ -24,25 +24,59 @@ interface Database{
     list():Promise<Number[]>
 }
 
+class ArrayDatabase implements Database{
+    tasks: Task[] = [];
+    async create(task:Task):Promise<Number>{
+        this.tasks.push(task);
+        return task.id
+    }
+    async read(id: Number):Promise<Task>{
+        let readTask:Task|undefined = tasks.find(task => task.id == id)
+        if (readTask !== undefined){return readTask}
+        else {return new Task("",-1)}
+    }
+    async update(id: Number, task:Task):Promise<Boolean>{
+        let updateIndex:number|undefined = tasks.findIndex(task => task.id == id)
+        if (updateIndex !== undefined){
+            tasks[updateIndex] = task
+            return true
+        }
+        return false
+    }
+    async delete(id: Number):Promise<Boolean>{
+        let deleteTask:Task|undefined = tasks.find(task => task.id == id)
+        if (deleteTask !== undefined){
+            tasks = tasks.filter(task => task !== deleteTask);
+            return true
+        }
+        return false
+    }
+    async list():Promise<Number[]>{
+        let idArr:Number[] = [];
+        tasks.forEach(task => idArr.push(task.id))
+        return idArr
+    }
+}
+
 class AddCommand implements Command{
     static readonly COMMAND_WORD:string = "todo"
-    run(input:string, res:ServerResponse):void{
-        tasks.push(new Task(input,id++))
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        await db.create(new Task(input,id++));
         res.write("Added a new task.");
     }
 }
 
 class RemoveCommand implements Command{
     static readonly COMMAND_WORD:string = "remove"
-    run(input:string, res:ServerResponse):void{
-        tasks = tasks.filter(task => task.id.toString() !== input);
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        
         res.write("Task deleted.");
     }
 }
 
 class ListCommand implements Command{
     static readonly COMMAND_WORD:string = "list";
-    run(input:string, res:ServerResponse):void{
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         tasks.forEach(task => tasksStr += task.id + ": " + task.desc + " | Complete: " + task.complete + "<br>");
         res.write(tasksStr);
         res.end();
@@ -51,7 +85,7 @@ class ListCommand implements Command{
 
 class CompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "complete";
-    run(input:string, res:ServerResponse):void{
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         tasks.find(task => task.id == parseInt(input))!.complete = true;
         res.write("Task "+input+" marked complete.")
     }    
@@ -59,14 +93,14 @@ class CompleteCommand implements Command{
 
 class IncompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "incomplete";
-    run(input:string, res:ServerResponse):void{
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         tasks.find(task => task.id == parseInt(input))!.complete = false;
         res.write("Task "+input+" marked incomplete.")
     }    
 }
 
 class InvalidCommand implements Command{
-    run(input:string, res:ServerResponse):void{
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         res.write("Invalid Command!");
     }
 }
@@ -78,6 +112,8 @@ let myForm: string = `<form action="" method="post">
                       <input type="text" id="textBox" name=textBox autofocus="autofocus">
                       <button type="submit">Hello!</button>
                       </form>`;
+
+let myDatabase:Database = new ArrayDatabase();
 
 createServer(function (req: IncomingMessage, res: ServerResponse) {
     res.writeHead(200, { "Content-Type": "text/html" });
@@ -117,7 +153,7 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     command = new InvalidCommand();
                     break;
             }
-            command.run(argument,res);});
+            command.run(argument,res,myDatabase);});
     }
     else if(req.url !== '/favicon.ico'){res.end();}
     else{res.end();}
