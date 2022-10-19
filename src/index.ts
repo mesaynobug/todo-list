@@ -1,14 +1,36 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 
 class Task{
-    desc: string;
-    id: number;
-    complete: boolean;
+    private desc: string;
+    private id: number;
+    private complete: boolean;
 
     constructor(desc: string, id:number){
         this.desc = desc;
         this.id = id;
         this.complete = false;
+    }
+
+    getDesc(){
+        return this.desc;
+    }
+    getId(){
+        return this.id;
+    }
+    getComplete(){
+        return this.complete;
+    }
+    setDesc(desc:string){
+        this.desc = desc;
+    }
+    setId(id:number){
+        this.id = id;
+    }
+    setComplete(complete:boolean){
+        this.complete = complete;
+    }
+    toString(){
+        return (this.id + ": " + this.desc + " | Complete: " + this.complete + "<br>")
     }
 }
 
