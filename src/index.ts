@@ -1,41 +1,113 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 
 class Task{
-    desc: string;
-    id: number;
-    complete: boolean;
+    private desc: string;
+    private id: number;
+    private complete: boolean;
 
     constructor(desc: string, id:number){
         this.desc = desc;
         this.id = id;
         this.complete = false;
     }
+
+    getDesc(){
+        return this.desc;
+    }
+    getId(){
+        return this.id;
+    }
+    getComplete(){
+        return this.complete;
+    }
+    setDesc(desc:string){
+        this.desc = desc;
+    }
+    setId(id:number){
+        this.id = id;
+    }
+    setComplete(complete:boolean){
+        this.complete = complete;
+    }
+    toString(){
+        return (this.id + ": " + this.desc + " | Complete: " + this.complete + "<br>")
+    }
 }
 
 interface Command{
-    run(input:string, res:ServerResponse):void;
+    run(input:string, res:ServerResponse, db:Database):Promise<void>;
+}
+
+interface Database{
+    create(desc:string):Promise<number>
+    read(id: number):Promise<Task>
+    update(id: number, task:Task):Promise<Boolean>
+    delete(id: number):Promise<Boolean>
+    list():Promise<number[]>
+}
+
+class ArrayDatabase implements Database{
+    tasks: Task[] = [];
+    id: number = 1;
+    async create(desc:string):Promise<number>{
+        this.tasks.push(new Task(desc,this.id));
+        this.id++;
+        return this.id-1;
+    }
+    async read(id: number):Promise<Task>{
+        let readTask:Task|undefined = this.tasks.find(task => task.getId() == id)
+        if (readTask !== undefined){return readTask}
+        else {return new Task("Invalid ID",-1)}
+    }
+    async update(id: number, task:Task):Promise<Boolean>{
+        let updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
+        if (updateIndex !== undefined){
+            this.tasks[updateIndex] = task
+            return true
+        }
+        return false
+    }
+    async delete(id: number):Promise<Boolean>{
+        let deleteTask:Task|undefined = this.tasks.find(task => task.getId() == id)
+        if (deleteTask !== undefined){
+            this.tasks = this.tasks.filter(task => task !== deleteTask);
+            return true
+        }
+        return false
+    }
+    async list():Promise<number[]>{
+        let idArr:number[] = [];
+        for (let i = 0; i<this.tasks.length;i++){
+            idArr.push(this.tasks[i].getId());
+        }
+        return idArr
+    }
 }
 
 class AddCommand implements Command{
     static readonly COMMAND_WORD:string = "todo"
-    run(input:string, res:ServerResponse):void{
-        tasks.push(new Task(input,id++))
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        await db.create(input);
         res.write("Added a new task.");
     }
 }
 
 class RemoveCommand implements Command{
     static readonly COMMAND_WORD:string = "remove"
-    run(input:string, res:ServerResponse):void{
-        tasks = tasks.filter(task => task.id.toString() !== input);
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        await db.delete(parseInt(input));
         res.write("Task deleted.");
     }
 }
 
 class ListCommand implements Command{
     static readonly COMMAND_WORD:string = "list";
-    run(input:string, res:ServerResponse):void{
-        tasks.forEach(task => tasksStr += task.id + ": " + task.desc + " | Complete: " + task.complete + "<br>");
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        let tasksStr:string = "";
+        let idArr:number[] = await db.list();
+        for (let i = 0; i<idArr.length;i++){
+            tasksStr += (await db.read(idArr[i])).toString();
+        }
         res.write(tasksStr);
         res.end();
     }
@@ -43,38 +115,40 @@ class ListCommand implements Command{
 
 class CompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "complete";
-    run(input:string, res:ServerResponse):void{
-        tasks.find(task => task.id == parseInt(input))!.complete = true;
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        let updateTask = await db.read(parseInt(input));
+        updateTask.setComplete(true);
+        await db.update(parseInt(input),updateTask);
         res.write("Task "+input+" marked complete.")
     }    
 }
 
 class IncompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "incomplete";
-    run(input:string, res:ServerResponse):void{
-        tasks.find(task => task.id == parseInt(input))!.complete = false;
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        let updateTask = await db.read(parseInt(input));
+        updateTask.setComplete(false);
+        await db.update(parseInt(input),updateTask);
         res.write("Task "+input+" marked incomplete.")
     }    
 }
 
 class InvalidCommand implements Command{
-    run(input:string, res:ServerResponse):void{
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         res.write("Invalid Command!");
     }
 }
 
-let tasks: Task[] = [];
-let id: number = 1;
-let tasksStr: string = "";
 let myForm: string = `<form action="" method="post">
                       <input type="text" id="textBox" name=textBox autofocus="autofocus">
                       <button type="submit">Hello!</button>
                       </form>`;
 
+let myDatabase:Database = new ArrayDatabase();
+
 createServer(function (req: IncomingMessage, res: ServerResponse) {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);
-    tasksStr = "";
 
     if (req.method === "POST") {
         let data: string = "";
@@ -109,7 +183,7 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     command = new InvalidCommand();
                     break;
             }
-            command.run(argument,res);});
+            command.run(argument,res,myDatabase);});
     }
     else if(req.url !== '/favicon.ico'){res.end();}
     else{res.end();}
