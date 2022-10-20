@@ -39,43 +39,47 @@ interface Command{
 }
 
 interface Database{
-    create(task:Task):Promise<Number>
-    read(id: Number):Promise<Task>
-    update(id: Number, task:Task):Promise<Boolean>
-    delete(id: Number):Promise<Boolean>
-    list():Promise<Number[]>
+    create(desc:string):Promise<number>
+    read(id: number):Promise<Task>
+    update(id: number, task:Task):Promise<Boolean>
+    delete(id: number):Promise<Boolean>
+    list():Promise<number[]>
 }
 
 class ArrayDatabase implements Database{
     tasks: Task[] = [];
-    async create(task:Task):Promise<Number>{
-        this.tasks.push(task);
-        return task.id
+    id: number = 1;
+    async create(desc:string):Promise<number>{
+        this.tasks.push(new Task(desc,this.id));
+        this.id++;
+        return this.id-1;
     }
-    async read(id: Number):Promise<Task>{
-        let readTask:Task|undefined = tasks.find(task => task.id == id)
+    async read(id: number):Promise<Task>{
+        let readTask:Task|undefined = this.tasks.find(task => task.getId() == id)
         if (readTask !== undefined){return readTask}
-        else {return new Task("",-1)}
+        else {return new Task("Invalid ID",-1)}
     }
-    async update(id: Number, task:Task):Promise<Boolean>{
-        let updateIndex:number|undefined = tasks.findIndex(task => task.id == id)
+    async update(id: number, task:Task):Promise<Boolean>{
+        let updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
         if (updateIndex !== undefined){
-            tasks[updateIndex] = task
+            this.tasks[updateIndex] = task
             return true
         }
         return false
     }
-    async delete(id: Number):Promise<Boolean>{
-        let deleteTask:Task|undefined = tasks.find(task => task.id == id)
+    async delete(id: number):Promise<Boolean>{
+        let deleteTask:Task|undefined = this.tasks.find(task => task.getId() == id)
         if (deleteTask !== undefined){
-            tasks = tasks.filter(task => task !== deleteTask);
+            this.tasks = this.tasks.filter(task => task !== deleteTask);
             return true
         }
         return false
     }
-    async list():Promise<Number[]>{
-        let idArr:Number[] = [];
-        tasks.forEach(task => idArr.push(task.id))
+    async list():Promise<number[]>{
+        let idArr:number[] = [];
+        for (let i = 0; i<this.tasks.length;i++){
+            idArr.push(this.tasks[i].getId());
+        }
         return idArr
     }
 }
@@ -83,7 +87,7 @@ class ArrayDatabase implements Database{
 class AddCommand implements Command{
     static readonly COMMAND_WORD:string = "todo"
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        await db.create(new Task(input,id++));
+        await db.create(input);
         res.write("Added a new task.");
     }
 }
@@ -91,7 +95,7 @@ class AddCommand implements Command{
 class RemoveCommand implements Command{
     static readonly COMMAND_WORD:string = "remove"
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        
+        await db.delete(parseInt(input));
         res.write("Task deleted.");
     }
 }
@@ -99,7 +103,11 @@ class RemoveCommand implements Command{
 class ListCommand implements Command{
     static readonly COMMAND_WORD:string = "list";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        tasks.forEach(task => tasksStr += task.id + ": " + task.desc + " | Complete: " + task.complete + "<br>");
+        let tasksStr:string = "";
+        let idArr:number[] = await db.list();
+        for (let i = 0; i<idArr.length;i++){
+            tasksStr += (await db.read(idArr[i])).toString();
+        }
         res.write(tasksStr);
         res.end();
     }
@@ -108,7 +116,9 @@ class ListCommand implements Command{
 class CompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "complete";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        tasks.find(task => task.id == parseInt(input))!.complete = true;
+        let updateTask = await db.read(parseInt(input));
+        updateTask.setComplete(true);
+        await db.update(parseInt(input),updateTask);
         res.write("Task "+input+" marked complete.")
     }    
 }
@@ -116,7 +126,9 @@ class CompleteCommand implements Command{
 class IncompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "incomplete";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        tasks.find(task => task.id == parseInt(input))!.complete = false;
+        let updateTask = await db.read(parseInt(input));
+        updateTask.setComplete(false);
+        await db.update(parseInt(input),updateTask);
         res.write("Task "+input+" marked incomplete.")
     }    
 }
@@ -127,9 +139,6 @@ class InvalidCommand implements Command{
     }
 }
 
-let tasks: Task[] = [];
-let id: number = 1;
-let tasksStr: string = "";
 let myForm: string = `<form action="" method="post">
                       <input type="text" id="textBox" name=textBox autofocus="autofocus">
                       <button type="submit">Hello!</button>
@@ -140,7 +149,6 @@ let myDatabase:Database = new ArrayDatabase();
 createServer(function (req: IncomingMessage, res: ServerResponse) {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);
-    tasksStr = "";
 
     if (req.method === "POST") {
         let data: string = "";
