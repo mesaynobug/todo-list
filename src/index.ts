@@ -1,4 +1,5 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
+import {readFile, writeFile} from "fs";
 
 class Task{
     private desc: string;
@@ -47,8 +48,8 @@ interface Database{
 }
 
 class ArrayDatabase implements Database{
-    tasks: Task[] = [];
-    id: number = 1;
+    private tasks: Task[] = [];
+    private id: number = 1;
     async create(desc:string):Promise<number>{
         this.tasks.push(new Task(desc,this.id));
         this.id++;
@@ -81,6 +82,66 @@ class ArrayDatabase implements Database{
             idArr.push(this.tasks[i].getId());
         }
         return idArr
+    }
+}
+
+class JsonDatabase implements Database{
+    private tasks: Task[];
+    private id: number;
+    private fileName: string;
+    async create(desc:string):Promise<number>{
+        this.tasks.push(new Task(desc,this.id));
+        this.id++;
+        this.saveFile();
+        return this.id-1;
+    }
+    async read(id: number):Promise<Task>{
+        let readTask:Task|undefined = this.tasks.find(task => task.getId() == id)
+        if (readTask !== undefined){return readTask}
+        else {return new Task("Invalid ID",-1)}
+    }
+    async update(id: number, task:Task):Promise<Boolean>{
+        let updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
+        if (updateIndex !== undefined){
+            this.tasks[updateIndex] = task
+            this.saveFile();
+            return true
+        }
+        return false
+    }
+    async delete(id: number):Promise<Boolean>{
+        let deleteTask:Task|undefined = this.tasks.find(task => task.getId() == id)
+        if (deleteTask !== undefined){
+            this.tasks = this.tasks.filter(task => task !== deleteTask);
+            this.saveFile();
+            return true
+        }
+        return false
+    }
+    async list():Promise<number[]>{
+        let idArr:number[] = [];
+        for (let i = 0; i<this.tasks.length;i++){
+            idArr.push(this.tasks[i].getId());
+        }
+        return idArr
+    }
+
+    constructor(fileName:string){
+        this.tasks = [];
+        this.id = -69;
+        readFile(fileName, (err, data) => {
+            const jsonData  = JSON.parse(data.toString()) as {tasks: any[], id:number};
+            this.tasks = jsonData.tasks.map(task => new Task(task.desc,task.id));
+            this.id = jsonData.id;
+        });
+        this.fileName = fileName;
+    }
+
+    private saveFile(){
+        writeFile(this.fileName,JSON.stringify({
+            tasks: this.tasks.map(task => ({desc: task.getDesc(),id: task.getId()})),
+            id: this.id
+        }),()=>{})
     }
 }
 
@@ -144,7 +205,7 @@ let myForm: string = `<form action="" method="post">
                       <button type="submit">Hello!</button>
                       </form>`;
 
-let myDatabase:Database = new ArrayDatabase();
+let myDatabase:Database = new JsonDatabase("Hello.json");
 
 createServer(function (req: IncomingMessage, res: ServerResponse) {
     res.writeHead(200, { "Content-Type": "text/html" });
