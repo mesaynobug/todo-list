@@ -1,15 +1,19 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import {readFile, writeFile} from "fs";
+import moment from "moment";
 
 class Task{
     private desc: string;
     private id: number;
     private complete: boolean;
+    private date: string;
 
-    constructor(desc: string, id:number){
+    constructor(desc: string, id:number, date:string, complete?:boolean,){
         this.desc = desc;
         this.id = id;
         this.complete = false;
+        if (complete !== undefined){this.complete = complete;}
+        this.date = date;
     }
 
     getDesc(){
@@ -21,6 +25,9 @@ class Task{
     getComplete(){
         return this.complete;
     }
+    getDate(){
+        return this.date;
+    }
     setDesc(desc:string){
         this.desc = desc;
     }
@@ -30,24 +37,27 @@ class Task{
     setComplete(complete:boolean){
         this.complete = complete;
     }
+    setDate(date:string){
+        this.date = date;
+    }
     toString(){
-        return (this.id + ": " + this.desc + " | Complete: " + this.complete + "<br>")
+        return (this.id + ": " + this.desc + " | Complete: " + this.complete + " | Due: " + this.date + "<br>")
     }
 }
 
 interface Command{
-    run(input:string, res:ServerResponse, db:Database):Promise<void>;
+    run(input:string, res:ServerResponse, db:Database, date?:string):Promise<void>;
 }
 
 interface Database{
-    create(desc:string):Promise<number>
+    create(desc:string, date?:string):Promise<number>
     read(id: number):Promise<Task>
     update(id: number, task:Task):Promise<Boolean>
     delete(id: number):Promise<Boolean>
     list():Promise<number[]>
 }
 
-class ArrayDatabase implements Database{
+`class ArrayDatabase implements Database{
     private tasks: Task[] = [];
     private id: number = 1;
     async create(desc:string):Promise<number>{
@@ -84,13 +94,14 @@ class ArrayDatabase implements Database{
         return idArr
     }
 }
+`
 
 class JsonDatabase implements Database{
     private tasks: Task[];
     private id: number;
     private fileName: string;
-    async create(desc:string):Promise<number>{
-        this.tasks.push(new Task(desc,this.id));
+    async create(desc:string, date:string):Promise<number>{
+        this.tasks.push(new Task(desc,this.id,date));
         this.id++;
         this.saveFile();
         return this.id-1;
@@ -98,7 +109,7 @@ class JsonDatabase implements Database{
     async read(id: number):Promise<Task>{
         let readTask:Task|undefined = this.tasks.find(task => task.getId() == id)
         if (readTask !== undefined){return readTask}
-        else {return new Task("Invalid ID",-1)}
+        else {return new Task("Invalid ID",-1,"")}
     }
     async update(id: number, task:Task):Promise<Boolean>{
         let updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
@@ -128,18 +139,18 @@ class JsonDatabase implements Database{
 
     constructor(fileName:string){
         this.tasks = [];
-        this.id = -69;
+        this.id = 1;
         readFile(fileName, (err, data) => {
-            const jsonData  = JSON.parse(data.toString()) as {tasks: any[], id:number};
-            this.tasks = jsonData.tasks.map(task => new Task(task.desc,task.id));
-            this.id = jsonData.id;
-        });
+                const jsonData  = JSON.parse(data.toString()) as {tasks: any[], id:number, complete:boolean, date:Date};
+                this.tasks = jsonData.tasks.map(task => new Task(task.desc,task.id,task.date,task.complete));
+                this.id = jsonData.id;}
+        );
         this.fileName = fileName;
     }
 
     private saveFile(){
         writeFile(this.fileName,JSON.stringify({
-            tasks: this.tasks.map(task => ({desc: task.getDesc(),id: task.getId()})),
+            tasks: this.tasks.map(task => ({desc: task.getDesc(),id: task.getId(),complete: task.getComplete(), date: task.getDate()})),
             id: this.id
         }),()=>{})
     }
@@ -147,8 +158,8 @@ class JsonDatabase implements Database{
 
 class AddCommand implements Command{
     static readonly COMMAND_WORD:string = "todo"
-    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        await db.create(input);
+    async run(input:string, res:ServerResponse, db:Database, date:string):Promise<void>{
+        await db.create(input,date);
         res.write("Added a new task.");
     }
 }
@@ -167,7 +178,9 @@ class ListCommand implements Command{
         let tasksStr:string = "";
         let idArr:number[] = await db.list();
         for (let i = 0; i<idArr.length;i++){
-            tasksStr += (await db.read(idArr[i])).toString();
+            let task:Task = await db.read(idArr[i]);
+            if (task.getDesc().search(input) !== -1 || input.trim() === ""){
+                tasksStr += task.toString();}
         }
         res.write(tasksStr);
         res.end();
@@ -202,6 +215,7 @@ class InvalidCommand implements Command{
 
 let myForm: string = `<form action="" method="post">
                       <input type="text" id="textBox" name=textBox autofocus="autofocus">
+                      Due:      <input type="date" name="date"><input type="time" name="time">
                       <button type="submit">Hello!</button>
                       </form>`;
 
@@ -219,11 +233,14 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
 
         req.on("end", () => {
             let usp: URLSearchParams = new URLSearchParams(data);
+            const time = usp.get("time");
+            const date = usp.get("date");
+            const timeDate = moment(`${date} ${time}`, 'YYYY-MM-DD HH:mm:ss').format('MMMM Do YYYY, h:mm a');
+
             let varCommand: string = usp.get("textBox")!.substring(0,usp.get("textBox")!.indexOf(' '));
                 if (usp.get("textBox")!.indexOf(' ') == -1){varCommand = usp.get("textBox")!;}
-            let argument: string = usp.get("textBox")!.substring(usp.get("textBox")!.indexOf(' ')+1);
+            let argument: string = usp.get("textBox")!.substring(varCommand.length+1);
             let command: Command;
-
             switch(varCommand.toLowerCase().trim()){
                 case AddCommand.COMMAND_WORD:
                     command = new AddCommand();
@@ -244,7 +261,7 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     command = new InvalidCommand();
                     break;
             }
-            command.run(argument,res,myDatabase);});
+            command.run(argument,res,myDatabase,timeDate);});
     }
     else if(req.url !== '/favicon.ico'){res.end();}
     else{res.end();}
