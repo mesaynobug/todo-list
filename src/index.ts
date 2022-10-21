@@ -167,7 +167,8 @@ class ListCommand implements Command{
         let tasksStr:string = "";
         let idArr:number[] = await db.list();
         for (let i = 0; i<idArr.length;i++){
-            tasksStr += (await db.read(idArr[i])).toString();
+            if (await (await db.read(idArr[i])).getDesc().search(input) !== -1 || input.trim() === ""){
+                tasksStr += (await db.read(idArr[i])).toString();}
         }
         res.write(tasksStr);
         res.end();
@@ -221,9 +222,8 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
             let usp: URLSearchParams = new URLSearchParams(data);
             let varCommand: string = usp.get("textBox")!.substring(0,usp.get("textBox")!.indexOf(' '));
                 if (usp.get("textBox")!.indexOf(' ') == -1){varCommand = usp.get("textBox")!;}
-            let argument: string = usp.get("textBox")!.substring(usp.get("textBox")!.indexOf(' ')+1);
+            let argument: string = usp.get("textBox")!.substring(varCommand.length+1);
             let command: Command;
-
             switch(varCommand.toLowerCase().trim()){
                 case AddCommand.COMMAND_WORD:
                     command = new AddCommand();
