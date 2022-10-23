@@ -41,7 +41,7 @@ class Task{
         this.date = date;
     }
     toString(){
-        return (this.id + ": " + this.desc + " | Complete: " + this.complete + " | Due: " + this.date + "<br>")
+        return (this.id + ": " + this.desc + " | Complete: " + this.complete + " | Due: " + this.date + " (" + moment().to(moment(this.getDate(),'MMMM Do YYYY, h:mm a')) + ")" + "<br>")
     }
 }
 
@@ -144,7 +144,6 @@ class JsonDatabase implements Database{
                 if (moment(task1.getDate(),'MMMM Do YYYY, h:mm a') > moment(task2.getDate(),'MMMM Do YYYY, h:mm a')) {
                     return 1;
                 }
-            
                 if (moment(task2.getDate(),'MMMM Do YYYY, h:mm a') > moment(task1.getDate(),'MMMM Do YYYY, h:mm a')) {
                     return -1;
                 }   
@@ -156,7 +155,6 @@ class JsonDatabase implements Database{
                 if (task1.getId() > task2.getId()) {
                     return 1;
                 }
-            
                 if (task2.getId() > task1.getId()) {
                     return -1;
                 }
