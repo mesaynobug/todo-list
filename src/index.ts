@@ -88,9 +88,9 @@ interface Database{
     }
     async list():Promise<number[]>{
         let idArr:number[] = [];
-        for (let i = 0; i<this.tasks.length;i++){
-            idArr.push(this.tasks[i].getId());
-        }
+        this.tasks.map(task => {
+            idArr.push(task.getId());
+        })
         return idArr
     }
 }
@@ -131,9 +131,9 @@ class JsonDatabase implements Database{
     }
     async list():Promise<number[]>{
         let idArr:number[] = [];
-        for (let i = 0; i<this.tasks.length;i++){
-            idArr.push(this.tasks[i].getId());
-        }
+        this.tasks.map(task => {
+            idArr.push(task.getId());
+        })
         return idArr
     }
 
@@ -177,11 +177,12 @@ class ListCommand implements Command{
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         let tasksStr:string = "";
         let idArr:number[] = await db.list();
-        for (let i = 0; i<idArr.length;i++){
-            let task:Task = await db.read(idArr[i]);
+        let taskArr:Task[];
+        taskArr = await Promise.all((idArr.map(id => db.read(id))));
+        taskArr.map(task => {
             if (task.getDesc().search(input) !== -1 || input.trim() === ""){
                 tasksStr += task.toString();}
-        }
+        })
         res.write(tasksStr);
         res.end();
     }
