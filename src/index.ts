@@ -55,6 +55,7 @@ interface Database{
     update(id: number, task:Task):Promise<Boolean>
     delete(id: number):Promise<Boolean>
     list():Promise<number[]>
+    taskSort(input:string):void
 }
 
 `class ArrayDatabase implements Database{
@@ -137,6 +138,33 @@ class JsonDatabase implements Database{
         return idArr
     }
 
+    taskSort(input:string){
+        if (input.trim() === "due"){
+            this.tasks.sort((task1,task2) => {
+                if (moment(task1.getDate(),'MMMM Do YYYY, h:mm a') > moment(task2.getDate(),'MMMM Do YYYY, h:mm a')) {
+                    return 1;
+                }
+            
+                if (moment(task2.getDate(),'MMMM Do YYYY, h:mm a') > moment(task1.getDate(),'MMMM Do YYYY, h:mm a')) {
+                    return -1;
+                }   
+                return 0;
+            });
+        }
+        else if (input.trim() === "id"){
+            this.tasks.sort((task1,task2) => {
+                if (task1.getId() > task2.getId()) {
+                    return 1;
+                }
+            
+                if (task2.getId() > task1.getId()) {
+                    return -1;
+                }
+                return 0;
+            });
+        }
+    }
+
     constructor(fileName:string){
         this.tasks = [];
         this.id = 1;
@@ -185,6 +213,14 @@ class ListCommand implements Command{
         })
         res.write(tasksStr);
         res.end();
+    }
+}
+
+class SortCommand implements Command{
+    static readonly COMMAND_WORD:string = "sort";
+    async run(input: string, res: ServerResponse, db: Database):Promise<void>{
+    db.taskSort(input);    
+    res.write("Sorted by :"+input);
     }
 }
 
@@ -251,6 +287,9 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     break;
                 case ListCommand.COMMAND_WORD:
                     command = new ListCommand();
+                    break;
+                case SortCommand.COMMAND_WORD:
+                    command = new SortCommand();
                     break;
                 case CompleteCommand.COMMAND_WORD:
                     command = new CompleteCommand();
