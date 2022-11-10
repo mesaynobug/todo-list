@@ -312,7 +312,12 @@ class JsonDatabase implements Database {
                 priority: number;
             };
             this.tasks = jsonData.tasks.map((task) => {
-                let t = new Task(task.desc, task.id, task.date, task.complete);
+                const t = new Task(
+                    task.desc,
+                    task.id,
+                    task.date,
+                    task.complete
+                );
                 t.setPriority(task.priority);
                 return t;
             });
