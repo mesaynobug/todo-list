@@ -7,6 +7,7 @@ class Task{
     private id: number;
     private complete: boolean;
     private date: string;
+    private priority: number;
 
     constructor(desc: string, id:number, date:string, complete?:boolean,){
         this.desc = desc;
@@ -14,6 +15,7 @@ class Task{
         this.complete = false;
         if (complete !== undefined){this.complete = complete;}
         this.date = date;
+        this.priority = 1
     }
 
     getDesc(){
@@ -28,6 +30,9 @@ class Task{
     getDate(){
         return this.date;
     }
+    getPriority(){
+        return this.priority;
+    }
     setDesc(desc:string){
         this.desc = desc;
     }
@@ -40,8 +45,11 @@ class Task{
     setDate(date:string){
         this.date = date;
     }
+    setPriority(priority:number){
+        this.priority = priority;
+    }
     toString(){
-        return (this.id + ": " + this.desc + " | Complete: " + this.complete + " | Due: " + this.date + " (" + moment().to(moment(this.getDate(),'MMMM Do YYYY, h:mm a')) + ")" + "<br>")
+        return (this.id + ": " + this.desc + " | Complete: " + this.complete + " | Priority: " + this.priority + " | Due: " + this.date + " (" + moment().to(moment(this.getDate(),'MMMM Do YYYY, h:mm a')) + ")" + "<br>")
     }
 }
 
@@ -167,8 +175,8 @@ class JsonDatabase implements Database{
         this.tasks = [];
         this.id = 1;
         readFile(fileName, (err, data) => {
-                const jsonData  = JSON.parse(data.toString()) as {tasks: any[], id:number, complete:boolean, date:Date};
-                this.tasks = jsonData.tasks.map(task => new Task(task.desc,task.id,task.date,task.complete));
+                const jsonData  = JSON.parse(data.toString()) as {tasks: any[], id:number, complete:boolean, date:Date, priority:number};
+                this.tasks = jsonData.tasks.map(task => {let t = new Task(task.desc,task.id,task.date,task.complete);t.setPriority(task.priority);return t;});
                 this.id = jsonData.id;}
         );
         this.fileName = fileName;
@@ -176,7 +184,7 @@ class JsonDatabase implements Database{
 
     private saveFile(){
         writeFile(this.fileName,JSON.stringify({
-            tasks: this.tasks.map(task => ({desc: task.getDesc(),id: task.getId(),complete: task.getComplete(), date: task.getDate()})),
+            tasks: this.tasks.map(task => ({desc: task.getDesc(),id: task.getId(),complete: task.getComplete(), date: task.getDate(), priority: task.getPriority()})),
             id: this.id
         }),()=>{})
     }
@@ -242,6 +250,19 @@ class IncompleteCommand implements Command{
     }    
 }
 
+class PriorityCommand implements Command{
+    static readonly COMMAND_WORD:string = "priority"
+    async run(input:string, res:ServerResponse, db:Database):Promise<void>{
+        const arrInput = input.split(" ");
+        if (!isNaN(parseInt(arrInput[0])) && !isNaN(parseInt(arrInput[1]))){
+            let updateTask = await db.read(parseInt(arrInput[0]));
+            updateTask.setPriority(parseInt(arrInput[1]));
+            await db.update(parseInt(arrInput[0]),updateTask);
+            res.write("Task "+arrInput[0]+" priority changed.")
+        }            
+    }
+}
+
 class InvalidCommand implements Command{
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         res.write("Invalid Command!");
@@ -294,6 +315,9 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     break;
                 case IncompleteCommand.COMMAND_WORD:
                     command = new IncompleteCommand();
+                    break;
+                case PriorityCommand.COMMAND_WORD:
+                    command = new PriorityCommand();
                     break;
                 default:
                     command = new InvalidCommand();
