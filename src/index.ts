@@ -13,6 +13,8 @@ class Task {
     private complete: boolean;
     /** The due date for the task in 'MMMM Do YYYY, h:mm' format */
     private date: string;
+    /** The importance of the task */
+    private priority: number;
     /**
      * Builds a new task object
      * @param desc The task description
@@ -28,6 +30,7 @@ class Task {
             this.complete = complete;
         }
         this.date = date;
+        this.priority = 1;
     }
     /**
      * Returns the task description
@@ -52,6 +55,12 @@ class Task {
      */
     getDate() {
         return this.date;
+    }
+    /**
+     * Returns the task priority
+     */
+    getPriority() {
+        return this.priority;
     }
     /**
      * Sets the task description
@@ -82,6 +91,13 @@ class Task {
         this.date = date;
     }
     /**
+     * Sets the task priority
+     * @param priority The priority of the task
+     */
+    setPriority(priority: number) {
+        this.priority = priority;
+    }
+    /**
      * Outputs a string formatted for use in ListCommand
      */
     toString() {
@@ -91,6 +107,8 @@ class Task {
             this.desc +
             " | Complete: " +
             this.complete +
+            " | Priority: " +
+            this.priority +
             " | Due: " +
             this.date +
             " (" +
@@ -291,10 +309,13 @@ class JsonDatabase implements Database {
                 id: number;
                 complete: boolean;
                 date: Date;
+                priority: number;
             };
-            this.tasks = jsonData.tasks.map(
-                (task) => new Task(task.desc, task.id, task.date, task.complete)
-            );
+            this.tasks = jsonData.tasks.map((task) => {
+                let t = new Task(task.desc, task.id, task.date, task.complete);
+                t.setPriority(task.priority);
+                return t;
+            });
             this.id = jsonData.id;
         });
         this.fileName = fileName;
@@ -311,6 +332,7 @@ class JsonDatabase implements Database {
                     id: task.getId(),
                     complete: task.getComplete(),
                     date: task.getDate(),
+                    priority: task.getPriority(),
                 })),
                 id: this.id,
             }),
@@ -376,7 +398,7 @@ class SortCommand implements Command {
     }
 }
 /**
- * Mark task as complete
+ * Marks task as complete
  */
 class CompleteCommand implements Command {
     static readonly COMMAND_WORD: string = "complete";
@@ -388,7 +410,7 @@ class CompleteCommand implements Command {
     }
 }
 /**
- * Mark task as incomplete
+ * Marks task as incomplete
  */
 class IncompleteCommand implements Command {
     static readonly COMMAND_WORD: string = "incomplete";
@@ -397,6 +419,21 @@ class IncompleteCommand implements Command {
         updateTask.setComplete(false);
         await db.update(parseInt(input), updateTask);
         res.write("Task " + input + " marked incomplete.");
+    }
+}
+/**
+ * Changes the priority of tasks
+ */
+class PriorityCommand implements Command {
+    static readonly COMMAND_WORD: string = "priority";
+    async run(input: string, res: ServerResponse, db: Database): Promise<void> {
+        const arrInput = input.split(" ");
+        if (!isNaN(parseInt(arrInput[0])) && !isNaN(parseInt(arrInput[1]))) {
+            const updateTask = await db.read(parseInt(arrInput[0]));
+            updateTask.setPriority(parseInt(arrInput[1]));
+            await db.update(parseInt(arrInput[0]), updateTask);
+            res.write("Task " + arrInput[0] + " priority changed.");
+        }
     }
 }
 /**
@@ -464,6 +501,9 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     break;
                 case IncompleteCommand.COMMAND_WORD:
                     command = new IncompleteCommand();
+                    break;
+                case PriorityCommand.COMMAND_WORD:
+                    command = new PriorityCommand();
                     break;
                 default:
                     command = new InvalidCommand();
