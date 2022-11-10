@@ -90,7 +90,7 @@
     "editor.fontSize": 14,
     "files.autoSave": "afterDelay",
     "editor.renderWhitespace": "selection",
-    "editor.cursorStyle": "block",
+    "editor.cursorStyle": "line",
     "editor.multiCursorModifier": "ctrlCmd",
     "editor.wordWrap": "off",
     "javascript.inlayHints.propertyDeclarationTypes.enabled": false,
