@@ -119,12 +119,12 @@ interface Database{
      * @param id The id of the task to update
      * @param task The updated task object
      */
-    update(id: number, task:Task):Promise<Boolean>
+    update(id: number, task:Task):Promise<boolean>
     /**
      * Permanently delete the specified task
      * @param id Id of the task to delete
      */
-    delete(id: number):Promise<Boolean>
+    delete(id: number):Promise<boolean>
     /**
      * Return an array containing all stored task ids
      */
@@ -149,7 +149,7 @@ interface Database{
         if (readTask !== undefined){return readTask}
         else {return new Task("Invalid ID",-1)}
     }
-    async update(id: number, task:Task):Promise<Boolean>{
+    async update(id: number, task:Task):Promise<boolean>{
         let updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
         if (updateIndex !== undefined){
             this.tasks[updateIndex] = task
@@ -157,7 +157,7 @@ interface Database{
         }
         return false
     }
-    async delete(id: number):Promise<Boolean>{
+    async delete(id: number):Promise<boolean>{
         let deleteTask:Task|undefined = this.tasks.find(task => task.getId() == id)
         if (deleteTask !== undefined){
             this.tasks = this.tasks.filter(task => task !== deleteTask);
@@ -191,12 +191,12 @@ class JsonDatabase implements Database{
         return this.id-1;
     }
     async read(id: number):Promise<Task>{
-        let readTask:Task|undefined = this.tasks.find(task => task.getId() == id)
+        const readTask:Task|undefined = this.tasks.find(task => task.getId() == id)
         if (readTask !== undefined){return readTask}
         else {return new Task("Invalid ID",-1,"")}
     }
-    async update(id: number, task:Task):Promise<Boolean>{
-        let updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
+    async update(id: number, task:Task):Promise<boolean>{
+        const updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
         if (updateIndex !== undefined){
             this.tasks[updateIndex] = task
             this.saveFile();
@@ -204,8 +204,8 @@ class JsonDatabase implements Database{
         }
         return false
     }
-    async delete(id: number):Promise<Boolean>{
-        let deleteTask:Task|undefined = this.tasks.find(task => task.getId() == id)
+    async delete(id: number):Promise<boolean>{
+        const deleteTask:Task|undefined = this.tasks.find(task => task.getId() == id)
         if (deleteTask !== undefined){
             this.tasks = this.tasks.filter(task => task !== deleteTask);
             this.saveFile();
@@ -214,7 +214,7 @@ class JsonDatabase implements Database{
         return false
     }
     async list():Promise<number[]>{
-        let idArr:number[] = [];
+        const idArr:number[] = [];
         this.tasks.map(task => {
             idArr.push(task.getId());
         })
@@ -266,7 +266,7 @@ class JsonDatabase implements Database{
         writeFile(this.fileName,JSON.stringify({
             tasks: this.tasks.map(task => ({desc: task.getDesc(),id: task.getId(),complete: task.getComplete(), date: task.getDate()})),
             id: this.id
-        }),()=>{})
+        }),(a)=>{a})
     }
 }
 /**
@@ -295,10 +295,9 @@ class RemoveCommand implements Command{
 class ListCommand implements Command{
     static readonly COMMAND_WORD:string = "list";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        let tasksStr:string = "";
-        let idArr:number[] = await db.list();
-        let taskArr:Task[];
-        taskArr = await Promise.all((idArr.map(id => db.read(id))));
+        let tasksStr = "";
+        const idArr:number[] = await db.list();
+        const taskArr = await Promise.all((idArr.map(id => db.read(id))));
         taskArr.map(task => {
             if (task.getDesc().search(input) !== -1 || input.trim() === ""){
                 tasksStr += task.toString();}
@@ -323,7 +322,7 @@ class SortCommand implements Command{
 class CompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "complete";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        let updateTask = await db.read(parseInt(input));
+        const updateTask = await db.read(parseInt(input));
         updateTask.setComplete(true);
         await db.update(parseInt(input),updateTask);
         res.write("Task "+input+" marked complete.")
@@ -335,7 +334,7 @@ class CompleteCommand implements Command{
 class IncompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "incomplete";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
-        let updateTask = await db.read(parseInt(input));
+        const updateTask = await db.read(parseInt(input));
         updateTask.setComplete(false);
         await db.update(parseInt(input),updateTask);
         res.write("Task "+input+" marked incomplete.")
@@ -350,33 +349,34 @@ class InvalidCommand implements Command{
     }
 }
 
-let myForm: string = `<form action="" method="post">
+const myForm = `<form action="" method="post">
                       <input type="text" id="textBox" name=textBox autofocus="autofocus">
                       Due:      <input type="date" name="date"><input type="time" name="time">
                       <button type="submit">Hello!</button>
                       </form>`;
 
-let myDatabase:Database = new JsonDatabase("Hello.json");
+const myDatabase:Database = new JsonDatabase("Hello.json");
 
 createServer(function (req: IncomingMessage, res: ServerResponse) {
     res.writeHead(200, { "Content-Type": "text/html" });
     res.write(myForm);
 
     if (req.method === "POST") {
-        let data: string = "";
+        let data = "";
 
         req.on("data", (chunk) => {
             data += chunk;});
 
         req.on("end", () => {
-            let usp: URLSearchParams = new URLSearchParams(data);
+            const usp: URLSearchParams = new URLSearchParams(data);
             const time = usp.get("time");
             const date = usp.get("date");
             const timeDate = moment(`${date} ${time}`, 'YYYY-MM-DD HH:mm:ss').format('MMMM Do YYYY, h:mm a');
-
-            let varCommand: string = usp.get("textBox")!.substring(0,usp.get("textBox")!.indexOf(' '));
-                if (usp.get("textBox")!.indexOf(' ') == -1){varCommand = usp.get("textBox")!;}
-            let argument: string = usp.get("textBox")!.substring(varCommand.length+1);
+            const textbox = usp.get("textBox");
+            if (textbox === null){res.write("Textbox is kill");return 0;}
+            let varCommand: string = textbox.substring(0,textbox.indexOf(' '));
+                if (textbox.indexOf(' ') == -1){varCommand = textbox;}
+            const argument: string = textbox.substring(varCommand.length+1);
             let command: Command;
             switch(varCommand.toLowerCase().trim()){
                 case AddCommand.COMMAND_WORD:
