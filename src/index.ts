@@ -1,13 +1,25 @@
 import { createServer, IncomingMessage, ServerResponse } from "http";
 import {readFile, writeFile} from "fs";
 import moment from "moment";
-
+/**
+ * Object representing a task in the to-do list
+ */
 class Task{
+    /** A text description of the task */
     private desc: string;
+    /** The id of the task */
     private id: number;
+    /** Whether the task has been completed or not */
     private complete: boolean;
+    /** The due date for the task in 'MMMM Do YYYY, h:mm' format */
     private date: string;
-
+    /**
+     * Builds a new task object
+     * @param desc The task description
+     * @param id The task id
+     * @param date The task due date
+     * @param complete The task completion status
+     */
     constructor(desc: string, id:number, date:string, complete?:boolean,){
         this.desc = desc;
         this.id = id;
@@ -15,46 +27,112 @@ class Task{
         if (complete !== undefined){this.complete = complete;}
         this.date = date;
     }
-
+    /** 
+     * Returns the task description
+     */
     getDesc(){
         return this.desc;
     }
+    /**
+     * Returns the task id 
+     */
     getId(){
         return this.id;
     }
+    /**
+     * Returns the completion status of the task
+     */
     getComplete(){
         return this.complete;
     }
+    /**
+     * Returns the task date in 'MMMM Do YYYY, h:mm' format
+     */
     getDate(){
         return this.date;
     }
+    /**
+     * Sets the task description
+     * @param desc The new description
+     */
     setDesc(desc:string){
         this.desc = desc;
     }
+    /**
+     * Sets the task id
+     * @param id The new id
+     */
     setId(id:number){
         this.id = id;
     }
+    /** 
+     * Sets the task completion status 
+     * @param complete The new completion status
+     */
     setComplete(complete:boolean){
         this.complete = complete;
     }
+    /** 
+     * Sets the task date
+     * @param date The new date in 'MMMM Do YYYY, h:mm' format
+     */
     setDate(date:string){
         this.date = date;
     }
+    /** 
+     * Outputs a string formatted for use in ListCommand 
+     */
     toString(){
         return (this.id + ": " + this.desc + " | Complete: " + this.complete + " | Due: " + this.date + " (" + moment().to(moment(this.getDate(),'MMMM Do YYYY, h:mm a')) + ")" + "<br>")
     }
 }
-
+/**
+ * Represents a command for the to-do list
+ */
 interface Command{
+    /**
+     * Runs the command
+     * @param input User input from the command box
+     * @param res The ServerResponse object to write to
+     * @param db The database to interact with
+     * @param date Optional parameter for certain commands
+     */
     run(input:string, res:ServerResponse, db:Database, date?:string):Promise<void>;
 }
-
+/**
+ * Stores tasks
+ */
 interface Database{
+    /**
+     * Creates a new task object
+     * @param desc Text description of the task
+     * @param date Optional due date of task
+     */
     create(desc:string, date?:string):Promise<number>
+    /**
+     * Returns the task associated with the specified id
+     * @param id The id of the task to return
+     */
     read(id: number):Promise<Task>
+    /**
+     * Modify an existing task's attributes
+     * @param id The id of the task to update
+     * @param task The updated task object
+     */
     update(id: number, task:Task):Promise<Boolean>
+    /**
+     * Permanently delete the specified task
+     * @param id Id of the task to delete
+     */
     delete(id: number):Promise<Boolean>
+    /**
+     * Return an array containing all stored task ids
+     */
     list():Promise<number[]>
+    /**
+     * Sort the task list by various attributes (due,id)
+     * @param input The attribute to sort by
+     */
     taskSort(input:string):void
 }
 
@@ -96,10 +174,15 @@ interface Database{
     }
 }
 `
-
+/**
+ *  Database implementation using a json file to store tasks
+ */
 class JsonDatabase implements Database{
+    /** Array of all stored tasks */
     private tasks: Task[];
+    /** Lowest unused id */
     private id: number;
+    /** Path to database json file */
     private fileName: string;
     async create(desc:string, date:string):Promise<number>{
         this.tasks.push(new Task(desc,this.id,date));
@@ -162,7 +245,10 @@ class JsonDatabase implements Database{
             });
         }
     }
-
+    /**
+     * Creates a new json database
+     * @param fileName The path to the json file
+     */
     constructor(fileName:string){
         this.tasks = [];
         this.id = 1;
@@ -173,7 +259,9 @@ class JsonDatabase implements Database{
         );
         this.fileName = fileName;
     }
-
+    /**
+     * Write the content of tasks back to the json file
+     */
     private saveFile(){
         writeFile(this.fileName,JSON.stringify({
             tasks: this.tasks.map(task => ({desc: task.getDesc(),id: task.getId(),complete: task.getComplete(), date: task.getDate()})),
@@ -181,7 +269,9 @@ class JsonDatabase implements Database{
         }),()=>{})
     }
 }
-
+/**
+ * Creates a new task object
+ */
 class AddCommand implements Command{
     static readonly COMMAND_WORD:string = "todo"
     async run(input:string, res:ServerResponse, db:Database, date:string):Promise<void>{
@@ -189,7 +279,9 @@ class AddCommand implements Command{
         res.write("Added a new task.");
     }
 }
-
+/**
+ * Deletes a task object
+ */
 class RemoveCommand implements Command{
     static readonly COMMAND_WORD:string = "remove"
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
@@ -197,7 +289,9 @@ class RemoveCommand implements Command{
         res.write("Task deleted.");
     }
 }
-
+/**
+ * Outputs all tasks to the to-do list, optionally filtering by keyword
+ */
 class ListCommand implements Command{
     static readonly COMMAND_WORD:string = "list";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
@@ -213,7 +307,9 @@ class ListCommand implements Command{
         res.end();
     }
 }
-
+/**
+ * Sorts tasks by given attribute
+ */
 class SortCommand implements Command{
     static readonly COMMAND_WORD:string = "sort";
     async run(input: string, res: ServerResponse, db: Database):Promise<void>{
@@ -221,7 +317,9 @@ class SortCommand implements Command{
     res.write("Sorted by :"+input);
     }
 }
-
+/**
+ * Mark task as complete
+ */
 class CompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "complete";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
@@ -231,7 +329,9 @@ class CompleteCommand implements Command{
         res.write("Task "+input+" marked complete.")
     }    
 }
-
+/**
+ * Mark task as incomplete
+ */
 class IncompleteCommand implements Command{
     static readonly COMMAND_WORD:string = "incomplete";
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
@@ -241,7 +341,9 @@ class IncompleteCommand implements Command{
         res.write("Task "+input+" marked incomplete.")
     }    
 }
-
+/**
+ * A Command that executes when user input is not valid
+ */
 class InvalidCommand implements Command{
     async run(input:string, res:ServerResponse, db:Database):Promise<void>{
         res.write("Invalid Command!");
