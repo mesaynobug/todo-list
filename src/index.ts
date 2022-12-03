@@ -15,6 +15,8 @@ class Task {
     private date: string;
     /** The importance of the task */
     private priority: number;
+    /** Keywords to associate the task with */
+    private tags: string[];
     /**
      * Builds a new task object
      * @param desc The task description
@@ -31,6 +33,7 @@ class Task {
         }
         this.date = date;
         this.priority = 1;
+        this.tags = [];
     }
     /**
      * Returns the task description
@@ -61,6 +64,12 @@ class Task {
      */
     getPriority() {
         return this.priority;
+    }
+    /**
+     * Returns task's tags as an array
+     */
+    getTags() {
+        return this.tags;
     }
     /**
      * Sets the task description
@@ -98,6 +107,35 @@ class Task {
         this.priority = priority;
     }
     /**
+     * Sets the task tags.
+     * @param tags The array of tags
+     */
+    setTags(tags: string[]) {
+        this.tags = tags;
+    }
+    /**
+     * Add a tag to the task. Returns 1 if successful, 0 otherwise
+     * @param addTag The tag to add
+     */
+    addTag(addTag: string) {
+        if (this.tags.find((tag) => tag === addTag) == undefined) {
+            this.tags.push(addTag);
+            return 1;
+        }
+        return 0;
+    }
+    /**
+     * Remove a tag from the task. Returns 1 if successful, 0 otherwise
+     * @param deleteTag The tag to delete
+     */
+    removeTag(deleteTag: string) {
+        if (!(this.tags.find((tag) => tag === deleteTag) == undefined)) {
+            this.tags = this.tags.filter((tag) => tag !== deleteTag);
+            return 1;
+        }
+        return 0;
+    }
+    /**
      * Outputs a string formatted for use in ListCommand
      */
     toString() {
@@ -105,6 +143,9 @@ class Task {
             this.id +
             ": " +
             this.desc +
+            " (" +
+            this.tags.toString() +
+            ") " +
             " | Complete: " +
             this.complete +
             " | Priority: " +
@@ -171,46 +212,20 @@ interface Database {
      * @param input The attribute to sort by
      */
     taskSort(input: string): void;
+    /**
+     * Add a tag to the task. Returns 1 if successful, 0 otherwise
+     * @param tag The tag to add
+     * @param id The id of the task to add a tag to
+     */
+    addTag(id: number, tag: string): Promise<number>;
+    /**
+     * Add a tag to the task. Returns 1 if successful, 0 otherwise
+     * @param tag The tag to add
+     * @param id The id of the task to remove a tag from
+     */
+    removeTag(id: number, tag: string): Promise<number>;
 }
 
-`class ArrayDatabase implements Database{
-    private tasks: Task[] = [];
-    private id: number = 1;
-    async create(desc:string):Promise<number>{
-        this.tasks.push(new Task(desc,this.id));
-        this.id++;
-        return this.id-1;
-    }
-    async read(id: number):Promise<Task>{
-        let readTask:Task|undefined = this.tasks.find(task => task.getId() == id)
-        if (readTask !== undefined){return readTask}
-        else {return new Task("Invalid ID",-1)}
-    }
-    async update(id: number, task:Task):Promise<boolean>{
-        let updateIndex:number|undefined = this.tasks.findIndex(task => task.getId() == id)
-        if (updateIndex !== undefined){
-            this.tasks[updateIndex] = task
-            return true
-        }
-        return false
-    }
-    async delete(id: number):Promise<boolean>{
-        let deleteTask:Task|undefined = this.tasks.find(task => task.getId() == id)
-        if (deleteTask !== undefined){
-            this.tasks = this.tasks.filter(task => task !== deleteTask);
-            return true
-        }
-        return false
-    }
-    async list():Promise<number[]>{
-        let idArr:number[] = [];
-        this.tasks.map(task => {
-            idArr.push(task.getId());
-        })
-        return idArr
-    }
-}
-`;
 /**
  *  Database implementation using a json file to store tasks
  */
@@ -296,6 +311,28 @@ class JsonDatabase implements Database {
             });
         }
     }
+    async addTag(id: number, tag: string) {
+        const taskIndex: number = this.tasks.findIndex(
+            (task) => task.getId() == id
+        );
+        if (taskIndex !== -1) {
+            const success: number = this.tasks[taskIndex].addTag(tag);
+            if (success === 1) this.saveFile();
+            return 1;
+        }
+        return 0;
+    }
+    async removeTag(id: number, tag: string) {
+        const taskIndex: number = this.tasks.findIndex(
+            (task) => task.getId() == id
+        );
+        if (taskIndex !== -1) {
+            const success: number = this.tasks[taskIndex].removeTag(tag);
+            if (success === 1) this.saveFile();
+            return 1;
+        }
+        return 0;
+    }
     /**
      * Creates a new json database
      * @param fileName The path to the json file
@@ -310,6 +347,7 @@ class JsonDatabase implements Database {
                 complete: boolean;
                 date: Date;
                 priority: number;
+                tags: string[];
             };
             this.tasks = jsonData.tasks.map((task) => {
                 const t = new Task(
@@ -319,6 +357,7 @@ class JsonDatabase implements Database {
                     task.complete
                 );
                 t.setPriority(task.priority);
+                t.setTags(task.tags);
                 return t;
             });
             this.id = jsonData.id;
@@ -338,6 +377,7 @@ class JsonDatabase implements Database {
                     complete: task.getComplete(),
                     date: task.getDate(),
                     priority: task.getPriority(),
+                    tags: task.getTags(),
                 })),
                 id: this.id,
             }),
@@ -441,6 +481,47 @@ class PriorityCommand implements Command {
         }
     }
 }
+
+class TagCommand implements Command {
+    static readonly COMMAND_WORD: string = "tag";
+    async run(input: string, res: ServerResponse, db: Database): Promise<void> {
+        const arrInput = input.split(" ");
+        if (
+            arrInput[0] === "add" &&
+            (await db.read(Number.parseInt(arrInput[1]))).getId() !== -1
+        ) {
+            const success: number = await db.addTag(
+                Number.parseInt(arrInput[1]),
+                arrInput[2]
+            );
+            if (success === 1) {
+                res.write(
+                    arrInput[2] + " added to tags of task " + arrInput[0] + "."
+                );
+            } else {
+                res.write("Tag already exists.");
+            }
+        } else if (
+            arrInput[0] === "remove" &&
+            (await db.read(Number.parseInt(arrInput[1]))).getId() !== -1
+        ) {
+            const success: number = await db.removeTag(
+                Number.parseInt(arrInput[1]),
+                arrInput[2]
+            );
+            if (success === 1) {
+                res.write(
+                    arrInput[2] +
+                        " removed from tags of task " +
+                        arrInput[0] +
+                        "."
+                );
+            } else {
+                res.write("Tag does not exist.");
+            }
+        }
+    }
+}
 /**
  * A Command that executes when user input is not valid
  */
@@ -509,6 +590,9 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     break;
                 case PriorityCommand.COMMAND_WORD:
                     command = new PriorityCommand();
+                    break;
+                case TagCommand.COMMAND_WORD:
+                    command = new TagCommand();
                     break;
                 default:
                     command = new InvalidCommand();
