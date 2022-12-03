@@ -309,6 +309,16 @@ class JsonDatabase implements Database {
                 }
                 return 0;
             });
+        } else if (input.trim() === "priority") {
+            this.tasks.sort((task1, task2) => {
+                if (task1.getPriority() < task2.getPriority()) {
+                    return 1;
+                }
+                if (task2.getPriority() < task1.getPriority()) {
+                    return -1;
+                }
+                return 0;
+            });
         }
     }
     async addTag(id: number, tag: string) {
