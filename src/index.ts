@@ -17,6 +17,8 @@ class Task {
     private priority: number;
     /** Keywords to associate the task with */
     private tags: string[];
+    /** Whether or not the task is archived */
+    private archived: boolean;
     /**
      * Builds a new task object
      * @param desc The task description
@@ -34,6 +36,7 @@ class Task {
         this.date = date;
         this.priority = 1;
         this.tags = [];
+        this.archived = false;
     }
     /**
      * Returns the task description
@@ -70,6 +73,12 @@ class Task {
      */
     getTags() {
         return this.tags;
+    }
+    /**
+     *  Returns the archival status
+     */
+    getArchived() {
+        return this.archived;
     }
     /**
      * Sets the task description
@@ -112,6 +121,13 @@ class Task {
      */
     setTags(tags: string[]) {
         this.tags = tags;
+    }
+    /**
+     * Set the task's archival status
+     * @param archived The archival status of the task
+     */
+    setArchived(archived: boolean) {
+        this.archived = archived;
     }
     /**
      * Add a tag to the task. Returns 1 if successful, 0 otherwise
@@ -358,6 +374,7 @@ class JsonDatabase implements Database {
                 date: Date;
                 priority: number;
                 tags: string[];
+                archived: boolean;
             };
             this.tasks = jsonData.tasks.map((task) => {
                 const t = new Task(
@@ -388,6 +405,7 @@ class JsonDatabase implements Database {
                     date: task.getDate(),
                     priority: task.getPriority(),
                     tags: task.getTags(),
+                    archived: task.getArchived,
                 })),
                 id: this.id,
             }),
@@ -423,18 +441,48 @@ class RemoveCommand implements Command {
     }
 }
 /**
+ * Archive specified task
+ */
+class ArchiveCommand implements Command {
+    static readonly COMMAND_WORD: string = "archive";
+    async run(input: string, res: ServerResponse, db: Database): Promise<void> {
+        const updateTask = await db.read(parseInt(input));
+        updateTask.setArchived(true);
+        await db.update(parseInt(input), updateTask);
+        res.write("Task " + input + " archived.");
+    }
+}
+/**
+ * Unarchive specified task
+ */
+class UnarchiveCommand implements Command {
+    static readonly COMMAND_WORD: string = "unarchive";
+    async run(input: string, res: ServerResponse, db: Database): Promise<void> {
+        const updateTask = await db.read(parseInt(input));
+        updateTask.setArchived(false);
+        await db.update(parseInt(input), updateTask);
+        res.write("Task " + input + " restore from archives.");
+    }
+}
+/**
  * Outputs all tasks to the to-do list, optionally filtering by keyword
  */
 class ListCommand implements Command {
     static readonly COMMAND_WORD: string = "list";
     async run(input: string, res: ServerResponse, db: Database): Promise<void> {
         let tasksStr = "";
+        const archive: boolean = input === "ARCHIVE";
         const idArr: number[] = await db.list();
         const taskArr: Task[] = await Promise.all(
             idArr.map((id) => db.read(id))
         );
         taskArr.map((task) => {
-            if (task.getDesc().search(input) !== -1 || input.trim() === "") {
+            if (
+                ((task.getDesc().search(input) !== -1 || input.trim() === "") &&
+                    !archive &&
+                    !task.getArchived()) ||
+                (archive && task.getArchived())
+            ) {
                 tasksStr += task.toString();
             }
         });
@@ -603,6 +651,12 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     break;
                 case TagCommand.COMMAND_WORD:
                     command = new TagCommand();
+                    break;
+                case ArchiveCommand.COMMAND_WORD:
+                    command = new ArchiveCommand();
+                    break;
+                case UnarchiveCommand.COMMAND_WORD:
+                    command = new ArchiveCommand();
                     break;
                 default:
                     command = new InvalidCommand();
