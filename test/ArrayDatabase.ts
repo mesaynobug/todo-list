@@ -1,21 +1,15 @@
-import { Task } from "./Task";
-import { Database } from "./Database";
+import { Database } from "../src/Database";
+import { Task } from "../src/Task";
 import moment from "moment";
-import { readFile, writeFile } from "fs";
-/**
- *  Database implementation using a json file to store tasks
- */
-export class JsonDatabase implements Database {
+
+export class ArrayDatabase implements Database {
     /** Array of all stored tasks */
-    private tasks: Task[];
+    tasks: Task[];
     /** Lowest unused id */
-    private id: number;
-    /** Path to database json file */
-    private fileName: string;
+    id: number;
     async create(desc: string, date: string): Promise<number> {
         this.tasks.push(new Task(desc, this.id, date));
         this.id++;
-        this.saveFile();
         return this.id - 1;
     }
     async read(id: number): Promise<Task> {
@@ -34,7 +28,6 @@ export class JsonDatabase implements Database {
         );
         if (updateIndex !== undefined) {
             this.tasks[updateIndex] = task;
-            this.saveFile();
             return true;
         }
         return false;
@@ -45,7 +38,6 @@ export class JsonDatabase implements Database {
         );
         if (deleteTask !== undefined) {
             this.tasks = this.tasks.filter((task) => task !== deleteTask);
-            this.saveFile();
             return true;
         }
         return false;
@@ -102,8 +94,7 @@ export class JsonDatabase implements Database {
             (task) => task.getId() == id
         );
         if (taskIndex !== -1) {
-            const success: number = this.tasks[taskIndex].addTag(tag);
-            if (success === 1) this.saveFile();
+            this.tasks[taskIndex].addTag(tag);
             return 1;
         }
         return 0;
@@ -113,66 +104,16 @@ export class JsonDatabase implements Database {
             (task) => task.getId() == id
         );
         if (taskIndex !== -1) {
-            const success: number = this.tasks[taskIndex].removeTag(tag);
-            if (success === 1) this.saveFile();
+            this.tasks[taskIndex].removeTag(tag);
             return 1;
         }
         return 0;
     }
     /**
      * Creates a new json database
-     * @param fileName The path to the json file
      */
-    constructor(fileName: string) {
+    constructor() {
         this.tasks = [];
         this.id = 1;
-        readFile(fileName, (err, data) => {
-            const jsonData = JSON.parse(data.toString()) as {
-                tasks: any[];
-                id: number;
-                complete: boolean;
-                date: Date;
-                priority: number;
-                tags: string[];
-                archived: boolean;
-            };
-            this.tasks = jsonData.tasks.map((task) => {
-                const t = new Task(
-                    task.desc,
-                    task.id,
-                    task.date,
-                    task.complete
-                );
-                t.setPriority(task.priority);
-                t.setTags(task.tags);
-                t.setArchived(task.archived);
-                return t;
-            });
-            this.id = jsonData.id;
-        });
-        this.fileName = fileName;
-    }
-    /**
-     * Write the content of tasks back to the json file
-     */
-    private saveFile() {
-        writeFile(
-            this.fileName,
-            JSON.stringify({
-                tasks: this.tasks.map((task) => ({
-                    desc: task.getDesc(),
-                    id: task.getId(),
-                    complete: task.getComplete(),
-                    date: task.getDate(),
-                    priority: task.getPriority(),
-                    tags: task.getTags(),
-                    archived: task.getArchived,
-                })),
-                id: this.id,
-            }),
-            (a) => {
-                a;
-            }
-        );
     }
 }
