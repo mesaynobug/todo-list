@@ -12,6 +12,16 @@ export class ListCommand implements Command {
         const args: string[] = input.split(" ");
         const archive: boolean = args[0] === "ARCHIVE";
         const tag: boolean = args[0] === "TAG";
+        const prio: boolean = args[0] === "PRIO";
+        let maxNum: number;
+        let minNum: number;
+        if (args[2] == "+") {
+            maxNum = Number.MAX_VALUE;
+            minNum = parseInt(args[1]);
+        } else if (args[2] == "-") {
+            minNum = Number.MIN_VALUE;
+            maxNum = parseInt(args[1]);
+        }
         const idArr: number[] = await db.list();
         const taskArr: Task[] = await Promise.all(
             idArr.map((id) => db.read(id))
@@ -31,7 +41,17 @@ export class ListCommand implements Command {
                 }
             });
         }
-        if (!tag && !archive) {
+        if (prio) {
+            taskArr.map((task) => {
+                if (
+                    task.getPriority() <= maxNum &&
+                    task.getPriority() >= minNum
+                ) {
+                    tasksStr += task.toString();
+                }
+            });
+        }
+        if (!tag && !archive && !prio) {
             taskArr.map((task) => {
                 if (
                     (task.getDesc().search(input) !== -1 ||
