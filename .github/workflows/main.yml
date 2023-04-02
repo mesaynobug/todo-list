@@ -1,2 +1,14 @@
-npm build
-npm test
+name: build and test
+on: [push, pull_request]
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: set up repo
+              uses: actions/checkout@main
+              with:
+                  ref: master
+            - name: check
+              run: npm run build
+            - name: test
+              run: npm test
