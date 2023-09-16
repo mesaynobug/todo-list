@@ -11,7 +11,7 @@ test("Task should have priority changed to 1337", async () => {
     testTask.setPriority(1);
     myDatabase.tasks.push(testTask);
 
-    new PriorityCommand().run(
+    await new PriorityCommand().run(
         "1 1337",
         null as unknown as ServerResponse,
         myDatabase

@@ -56,7 +56,7 @@ test("Tasks should be sorted by priority", async () => {
         return t;
     });
 
-    new SortCommand().run(
+    await new SortCommand().run(
         "priority",
         null as unknown as ServerResponse,
         myDatabase
@@ -118,7 +118,11 @@ test("Tasks should be sorted by id", async () => {
         return t;
     });
 
-    new SortCommand().run("id", null as unknown as ServerResponse, myDatabase);
+    await new SortCommand().run(
+        "id",
+        null as unknown as ServerResponse,
+        myDatabase
+    );
 
     assert.strictEqual(myDatabase.tasks[0].getId(), 1);
     assert.strictEqual(myDatabase.tasks[1].getId(), 2);
@@ -176,7 +180,11 @@ test("Tasks should be sorted by due date", async () => {
         return t;
     });
 
-    new SortCommand().run("due", null as unknown as ServerResponse, myDatabase);
+    await new SortCommand().run(
+        "due",
+        null as unknown as ServerResponse,
+        myDatabase
+    );
 
     assert.strictEqual(myDatabase.tasks[0].getId(), 2);
     assert.strictEqual(myDatabase.tasks[1].getId(), 3);

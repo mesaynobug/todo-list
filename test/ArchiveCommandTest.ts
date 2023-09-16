@@ -11,7 +11,7 @@ test("Archived Task should have false archived attribute", async () => {
     testTask.setArchived(false);
     myDatabase.tasks.push(testTask);
 
-    new ArchiveCommand().run(
+    await new ArchiveCommand().run(
         "1",
         null as unknown as ServerResponse,
         myDatabase

@@ -11,7 +11,7 @@ test("Task should be marked incomplete", async () => {
     testTask.setComplete(true);
     myDatabase.tasks.push(testTask);
 
-    new IncompleteCommand().run(
+    await new IncompleteCommand().run(
         "1",
         null as unknown as ServerResponse,
         myDatabase

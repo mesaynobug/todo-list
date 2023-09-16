@@ -11,12 +11,12 @@ test("Task should have Hello and Hi appended to list of tags", async () => {
     testTask.setTags([]);
     myDatabase.tasks.push(testTask);
 
-    new TagCommand().run(
+    await new TagCommand().run(
         "add 1 Hello",
         null as unknown as ServerResponse,
         myDatabase
     );
-    new TagCommand().run(
+    await new TagCommand().run(
         "add 1 Hi",
         null as unknown as ServerResponse,
         myDatabase
@@ -34,12 +34,12 @@ test("Task should have Hello and Hi removed from the list of tags", async () => 
     testTask.setTags(["Hello", "Hi"]);
     myDatabase.tasks.push(testTask);
 
-    new TagCommand().run(
+    await new TagCommand().run(
         "remove 1 Hello",
         null as unknown as ServerResponse,
         myDatabase
     );
-    new TagCommand().run(
+    await new TagCommand().run(
         "remove 1 Hi",
         null as unknown as ServerResponse,
         myDatabase

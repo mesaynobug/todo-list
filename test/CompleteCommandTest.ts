@@ -11,7 +11,7 @@ test("Task should be marked complete", async () => {
     testTask.setComplete(false);
     myDatabase.tasks.push(testTask);
 
-    new CompleteCommand().run(
+    await new CompleteCommand().run(
         "1",
         null as unknown as ServerResponse,
         myDatabase

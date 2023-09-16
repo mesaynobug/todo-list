@@ -10,7 +10,11 @@ test("Task should be removed from database", async () => {
     const testTask = new Task("ass", 1, "November 28th 2022, 1:46 pm");
     myDatabase.tasks.push(testTask);
 
-    new RemoveCommand().run("1", null as unknown as ServerResponse, myDatabase);
+    await new RemoveCommand().run(
+        "1",
+        null as unknown as ServerResponse,
+        myDatabase
+    );
 
     assert.notStrictEqual((await myDatabase.read(1)).getId(), 1);
 });

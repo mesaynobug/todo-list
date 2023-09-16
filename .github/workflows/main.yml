@@ -9,6 +9,6 @@ jobs:
               with:
                   ref: master
             - name: check
-              run: npm run build
+              run: npm run-script build
             - name: test
               run: npm test
