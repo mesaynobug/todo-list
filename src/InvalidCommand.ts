@@ -6,6 +6,6 @@ import { ServerResponse } from "http";
  */
 export class InvalidCommand implements Command {
     async run(input: string, res: ServerResponse, db: Database): Promise<void> {
-        res.write("Invalid Command!");
+        if (res != null) res.write("Invalid Command!");
     }
 }

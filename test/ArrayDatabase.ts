@@ -110,7 +110,7 @@ export class ArrayDatabase implements Database {
         return 0;
     }
     /**
-     * Creates a new json database
+     * Creates a new array database
      */
     constructor() {
         this.tasks = [];

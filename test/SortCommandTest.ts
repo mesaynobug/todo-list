@@ -124,6 +124,10 @@ test("Tasks should be sorted by id", async () => {
         myDatabase
     );
 
+    console.log(myDatabase.tasks[0].getId());
+    console.log(myDatabase.tasks[1].getId());
+    console.log(myDatabase.tasks[2].getId());
+
     assert.strictEqual(myDatabase.tasks[0].getId(), 1);
     assert.strictEqual(myDatabase.tasks[1].getId(), 2);
     assert.strictEqual(myDatabase.tasks[2].getId(), 3);

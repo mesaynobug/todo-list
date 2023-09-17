@@ -10,6 +10,6 @@ export class CompleteCommand implements Command {
         const updateTask = await db.read(parseInt(input));
         updateTask.setComplete(true);
         await db.update(parseInt(input), updateTask);
-        res.write("Task " + input + " marked complete.");
+        if (res != null) res.write("Task " + input + " marked complete.");
     }
 }

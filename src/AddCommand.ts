@@ -13,6 +13,6 @@ export class AddCommand implements Command {
         date: string
     ): Promise<void> {
         await db.create(input, date);
-        res.write("Added a new task.");
+        if (res!=null)res.write("Added a new task.");
     }
 }

@@ -8,6 +8,6 @@ export class RemoveCommand implements Command {
     static readonly COMMAND_WORD: string = "remove";
     async run(input: string, res: ServerResponse, db: Database): Promise<void> {
         await db.delete(parseInt(input));
-        res.write("Task deleted.");
+        if (res != null) res.write("Task deleted.");
     }
 }

@@ -10,6 +10,6 @@ export class UnarchiveCommand implements Command {
         const updateTask = await db.read(parseInt(input));
         updateTask.setArchived(false);
         await db.update(parseInt(input), updateTask);
-        res.write("Task " + input + " restore from archives.");
+        if (res != null) res.write("Task " + input + " restore from archives.");
     }
 }

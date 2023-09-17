@@ -10,6 +10,6 @@ export class IncompleteCommand implements Command {
         const updateTask = await db.read(parseInt(input));
         updateTask.setComplete(false);
         await db.update(parseInt(input), updateTask);
-        res.write("Task " + input + " marked incomplete.");
+        if (res != null) res.write("Task " + input + " marked incomplete.");
     }
 }

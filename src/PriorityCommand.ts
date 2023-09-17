@@ -12,7 +12,8 @@ export class PriorityCommand implements Command {
             const updateTask = await db.read(parseInt(arrInput[0]));
             updateTask.setPriority(parseInt(arrInput[1]));
             await db.update(parseInt(arrInput[0]), updateTask);
-            res.write("Task " + arrInput[0] + " priority changed.");
+            if (res != null)
+                res.write("Task " + arrInput[0] + " priority changed.");
         }
     }
 }

@@ -13,12 +13,12 @@ export class TagCommand implements Command {
                 Number.parseInt(arrInput[1]),
                 arrInput[2]
             );
-            if (success === 1) {
+            if (success === 1 && res != null) {
                 res.write(
                     arrInput[2] + " added to tags of task " + arrInput[0] + "."
                 );
             } else {
-                res.write("Tag already exists.");
+                if (res != null) res.write("Tag already exists.");
             }
         } else if (
             arrInput[0] === "remove" &&
@@ -28,7 +28,7 @@ export class TagCommand implements Command {
                 Number.parseInt(arrInput[1]),
                 arrInput[2]
             );
-            if (success === 1) {
+            if (success === 1 && res != null) {
                 res.write(
                     arrInput[2] +
                         " removed from tags of task " +
@@ -36,7 +36,7 @@ export class TagCommand implements Command {
                         "."
                 );
             } else {
-                res.write("Tag does not exist.");
+                if (res != null) res.write("Tag does not exist.");
             }
         }
     }

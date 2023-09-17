@@ -8,6 +8,6 @@ export class SortCommand implements Command {
     static readonly COMMAND_WORD: string = "sort";
     async run(input: string, res: ServerResponse, db: Database): Promise<void> {
         db.taskSort(input);
-        res.write("Sorted by :" + input);
+        if (res != null) res.write("Sorted by :" + input);
     }
 }
