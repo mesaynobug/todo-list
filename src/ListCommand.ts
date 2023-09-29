@@ -1,13 +1,13 @@
 import { Command } from "./Command";
 import { Database } from "./Database";
-import { ServerResponse } from "http";
+import { IOHandler } from "./IOHandler";
 import { Task } from "./Task";
 /**
  * Outputs all tasks to the to-do list, optionally filtering by keyword
  */
 export class ListCommand implements Command {
     static readonly COMMAND_WORD: string = "list";
-    async run(input: string, res: ServerResponse, db: Database): Promise<void> {
+    async run(input: string, handler: IOHandler, db: Database): Promise<void> {
         let tasksStr = "";
         const args: string[] = input.split(" ");
         const archive: boolean = args[0] === "ARCHIVE";
@@ -62,7 +62,7 @@ export class ListCommand implements Command {
                 }
             });
         }
-        res.write(tasksStr);
-        res.end();
+        await handler.output(tasksStr);
+        handler.end;
     }
 }

@@ -14,6 +14,7 @@ import { IncompleteCommand } from "./IncompleteCommand";
 import { PriorityCommand } from "./PriorityCommand";
 import { TagCommand } from "./TagCommand";
 import { InvalidCommand } from "./InvalidCommand";
+import { HTTPIOHandler } from "./HTTPIOHandler";
 
 const myForm = `<form action="" method="post">
                       <input type="text" id="textBox" name=textBox autofocus="autofocus">
@@ -24,8 +25,9 @@ const myForm = `<form action="" method="post">
 const myDatabase: Database = new JsonDatabase("Hello.json");
 
 createServer(function (req: IncomingMessage, res: ServerResponse) {
+    const ioHandler = new HTTPIOHandler(res);
     res.writeHead(200, { "Content-Type": "text/html" });
-    res.write(myForm);
+    ioHandler.output(myForm);
 
     if (req.method === "POST") {
         let data = "";
@@ -44,7 +46,7 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
             ).format("MMMM Do YYYY, h:mm a");
             const textbox = usp.get("textBox");
             if (textbox === null) {
-                res.write("Textbox is kill");
+                ioHandler.output("Textbox is kill");
                 return 0;
             }
             let varCommand: string = textbox.substring(0, textbox.indexOf(" "));
@@ -88,7 +90,7 @@ createServer(function (req: IncomingMessage, res: ServerResponse) {
                     command = new InvalidCommand();
                     break;
             }
-            command.run(argument, res, myDatabase, timeDate);
+            command.run(argument, ioHandler, myDatabase, timeDate);
         });
     } else if (req.url !== "/favicon.ico") {
         res.end();

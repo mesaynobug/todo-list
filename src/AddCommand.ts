@@ -1,6 +1,6 @@
 import { Command } from "./Command";
 import { Database } from "./Database";
-import { ServerResponse } from "http";
+import { IOHandler } from "./IOHandler";
 /**
  * Creates a new task object
  */
@@ -8,11 +8,11 @@ export class AddCommand implements Command {
     static readonly COMMAND_WORD: string = "todo";
     async run(
         input: string,
-        res: ServerResponse,
+        handler: IOHandler,
         db: Database,
         date: string
     ): Promise<void> {
         await db.create(input, date);
-        if (res!=null)res.write("Added a new task.");
+        await handler.output("Added a new task.");
     }
 }

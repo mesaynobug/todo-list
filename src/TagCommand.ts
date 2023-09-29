@@ -1,9 +1,9 @@
 import { Command } from "./Command";
 import { Database } from "./Database";
-import { ServerResponse } from "http";
+import { IOHandler } from "./IOHandler";
 export class TagCommand implements Command {
     static readonly COMMAND_WORD: string = "tag";
-    async run(input: string, res: ServerResponse, db: Database): Promise<void> {
+    async run(input: string, handler: IOHandler, db: Database): Promise<void> {
         const arrInput = input.split(" ");
         if (
             arrInput[0] === "add" &&
@@ -13,12 +13,12 @@ export class TagCommand implements Command {
                 Number.parseInt(arrInput[1]),
                 arrInput[2]
             );
-            if (success === 1 && res != null) {
-                res.write(
+            if (success === 1) {
+                await handler.output(
                     arrInput[2] + " added to tags of task " + arrInput[0] + "."
                 );
             } else {
-                if (res != null) res.write("Tag already exists.");
+                await handler.output("Tag already exists.");
             }
         } else if (
             arrInput[0] === "remove" &&
@@ -28,15 +28,15 @@ export class TagCommand implements Command {
                 Number.parseInt(arrInput[1]),
                 arrInput[2]
             );
-            if (success === 1 && res != null) {
-                res.write(
+            if (success === 1) {
+                await handler.output(
                     arrInput[2] +
                         " removed from tags of task " +
                         arrInput[0] +
                         "."
                 );
             } else {
-                if (res != null) res.write("Tag does not exist.");
+                await handler.output("Tag does not exist.");
             }
         }
     }

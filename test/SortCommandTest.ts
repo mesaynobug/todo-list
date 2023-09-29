@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { ServerResponse } from "node:http";
 import assert from "node:assert";
 import { Task } from "../src/Task";
+import { TestIOHandler } from "../src/TestIOHandler";
 
 test("Tasks should be sorted by priority", async () => {
     const json = {
@@ -47,6 +48,7 @@ test("Tasks should be sorted by priority", async () => {
     };
 
     const myDatabase = new ArrayDatabase();
+    const ioHandler = new TestIOHandler(null as unknown as ServerResponse);
 
     myDatabase.tasks = jsonData.tasks.map((task) => {
         const t = new Task(task.desc, task.id, task.date, task.complete);
@@ -56,11 +58,7 @@ test("Tasks should be sorted by priority", async () => {
         return t;
     });
 
-    await new SortCommand().run(
-        "priority",
-        null as unknown as ServerResponse,
-        myDatabase
-    );
+    await new SortCommand().run("priority", ioHandler, myDatabase);
 
     assert.strictEqual(myDatabase.tasks[0].getId(), 2);
     assert.strictEqual(myDatabase.tasks[1].getId(), 3);
@@ -109,6 +107,7 @@ test("Tasks should be sorted by id", async () => {
     };
 
     const myDatabase = new ArrayDatabase();
+    const ioHandler = new TestIOHandler(null as unknown as ServerResponse);
 
     myDatabase.tasks = jsonData.tasks.map((task) => {
         const t = new Task(task.desc, task.id, task.date, task.complete);
@@ -118,11 +117,7 @@ test("Tasks should be sorted by id", async () => {
         return t;
     });
 
-    await new SortCommand().run(
-        "id",
-        null as unknown as ServerResponse,
-        myDatabase
-    );
+    await new SortCommand().run("id", ioHandler, myDatabase);
 
     console.log(myDatabase.tasks[0].getId());
     console.log(myDatabase.tasks[1].getId());
@@ -175,6 +170,7 @@ test("Tasks should be sorted by due date", async () => {
     };
 
     const myDatabase = new ArrayDatabase();
+    const ioHandler = new TestIOHandler(null as unknown as ServerResponse);
 
     myDatabase.tasks = jsonData.tasks.map((task) => {
         const t = new Task(task.desc, task.id, task.date, task.complete);
@@ -184,11 +180,7 @@ test("Tasks should be sorted by due date", async () => {
         return t;
     });
 
-    await new SortCommand().run(
-        "due",
-        null as unknown as ServerResponse,
-        myDatabase
-    );
+    await new SortCommand().run("due", ioHandler, myDatabase);
 
     assert.strictEqual(myDatabase.tasks[0].getId(), 2);
     assert.strictEqual(myDatabase.tasks[1].getId(), 3);
