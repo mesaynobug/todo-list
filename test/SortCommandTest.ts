@@ -1,7 +1,6 @@
 import { SortCommand } from "../src/SortCommand";
 import { ArrayDatabase } from "./ArrayDatabase";
 import { test } from "node:test";
-import { ServerResponse } from "node:http";
 import assert from "node:assert";
 import { Task } from "../src/Task";
 import { TestIOHandler } from "../src/TestIOHandler";
@@ -48,7 +47,7 @@ test("Tasks should be sorted by priority", async () => {
     };
 
     const myDatabase = new ArrayDatabase();
-    const ioHandler = new TestIOHandler(null as unknown as ServerResponse);
+    const ioHandler = new TestIOHandler();
 
     myDatabase.tasks = jsonData.tasks.map((task) => {
         const t = new Task(task.desc, task.id, task.date, task.complete);
@@ -107,7 +106,7 @@ test("Tasks should be sorted by id", async () => {
     };
 
     const myDatabase = new ArrayDatabase();
-    const ioHandler = new TestIOHandler(null as unknown as ServerResponse);
+    const ioHandler = new TestIOHandler();
 
     myDatabase.tasks = jsonData.tasks.map((task) => {
         const t = new Task(task.desc, task.id, task.date, task.complete);
@@ -170,7 +169,7 @@ test("Tasks should be sorted by due date", async () => {
     };
 
     const myDatabase = new ArrayDatabase();
-    const ioHandler = new TestIOHandler(null as unknown as ServerResponse);
+    const ioHandler = new TestIOHandler();
 
     myDatabase.tasks = jsonData.tasks.map((task) => {
         const t = new Task(task.desc, task.id, task.date, task.complete);
