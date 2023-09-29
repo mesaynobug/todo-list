@@ -11,5 +11,6 @@ export class ArchiveCommand implements Command {
         updateTask.setArchived(true);
         await db.update(parseInt(input), updateTask);
         if (res != null) res.write("Task " + input + " archived.");
+        else console.log("THIS SHOULD NOT EXECUTE");
     }
 }
