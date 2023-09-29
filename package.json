@@ -20,7 +20,7 @@
     "homepage": "https://github.com/mesaynobug/todo-list#readme",
     "devDependencies": {
         "@types/jest": "^29.4.0",
-        "@types/node": "^18.7.18",
+        "@types/node": "^18.17.17",
         "@typescript-eslint/eslint-plugin": "^5.42.1",
         "@typescript-eslint/parser": "^5.42.1",
         "eslint": "^8.27.0",
