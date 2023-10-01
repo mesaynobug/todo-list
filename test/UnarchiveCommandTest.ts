@@ -12,8 +12,5 @@ test("Archived Task should have false archived attribute", async () => {
     testTask.setArchived(true);
     myDatabase.tasks.push(testTask);
 
-    await new UnarchiveCommand().run("1", ioHandler, myDatabase);
-
-    assert.strictEqual((await myDatabase.read(1)).getArchived(), false);*/
-    assert.strictEqual(1, 1);
+    await new UnarchiveCommand().run("1", ioHandler, myDatabase);*/
 });
